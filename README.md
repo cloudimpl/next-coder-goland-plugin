@@ -1,11 +1,7 @@
 # 🚀 GoLand Polycode Navigator
 
 <!-- Plugin description -->
-## ✨ Overview
-
-The **GoLand Polycode Navigator** is an innovative IntelliJ Platform plugin designed to enhance navigation within polyglot GoLand projects. It provides seamless and intuitive ways to explore codebases that combine Go with other languages, making development smoother and more efficient.
-
-Say goodbye to the hassle of jumping between different tools or manually searching for related code. This plugin intelligently understands your project's structure, allowing you to navigate across language boundaries with ease.
+This plugin, Polycode, is designed to significantly enhance navigation within polyglot GoLand projects. It provides seamless and intuitive ways to explore codebases that combine Go with other languages, making development smoother and more efficient for developers working with diverse technology stacks. It intelligently understands your project's structure, allowing you to navigate across language boundaries with ease, reducing context switching and accelerating your development workflow in complex, multi-language GoLand projects.
 <!-- Plugin description end -->
 
 ## 🌟 Features
