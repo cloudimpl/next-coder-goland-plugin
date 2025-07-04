@@ -1,0 +1,78 @@
+# GitHub Actions Workflow created for handling the release process based on the draft release prepared with the Build workflow.
+# Running the publishPlugin task requires all following secrets to be provided: PUBLISH_TOKEN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD, CERTIFICATE_CHAIN.
+# See https://plugins.jetbrains.com/docs/intellij/plugin-signing.html for more information.
+
+name: Continuous Release
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Publish Plugin
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to get all history for versioning
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Get current version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(grep 'pluginVersion' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          echo "Current version: $CURRENT_VERSION"
+          MAJOR=$(echo $CURRENT_VERSION | cut -d'.' -f1)
+          MINOR=$(echo $CURRENT_VERSION | cut -d'.' -f2)
+          PATCH=$(echo $CURRENT_VERSION | cut -d'.' -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Update plugin version in gradle.properties
+        run: |
+          sed -i "s/^pluginVersion = .*/pluginVersion = ${{ env.NEW_VERSION }}/" gradle.properties
+          cat gradle.properties
+
+      - name: Commit and Push new version
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add gradle.properties
+          git commit -m "Bump version to ${{ env.NEW_VERSION }} [skip ci]"
+          git push
+
+      - name: Publish Plugin
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew publishPlugin
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.NEW_VERSION }}
+          name: Release v${{ env.NEW_VERSION }}
+          body: |
+            Automated release for version ${{ env.NEW_VERSION }}.
+            See CHANGELOG.md for details.
+          files: |
+            ./build/distributions/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
